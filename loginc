@@ -1,0 +1,161 @@
+import 'package:flutter/cupertino.dart';
+import 'package:get/get.dart';
+import 'package:sendotp_flutter_sdk/sendotp_flutter_sdk.dart';
+import 'package:shuktu/models/check_mobile_model.dart';
+import 'package:shuktu/models/login_model.dart';
+import 'package:shuktu/services/api_services/injection_container.dart';
+import 'package:shuktu/widgets/custom_snack_bar.dart';
+import '../verification_screen/verification_screen.dart';
+
+class LoginController extends GetxController{
+
+  final String widgetId = '36616f677971343432383834';
+  final String authToken = '483352TnfmvwXUE696896b1P1';
+  final mobileController = TextEditingController();
+
+  var isLoading = false.obs;
+  RxBool isChecked = false.obs;
+
+
+  LoginModel loginModelData = LoginModel();
+  CheckMobileModel checkMobileModel = CheckMobileModel();
+
+  @override
+  void onInit() {
+    super.onInit();
+    OTPWidget.initializeWidget(widgetId, authToken);
+  }
+
+  void toggleCheckbox()=> isChecked.value = !isChecked.value;
+
+
+
+  void validateFields(BuildContext context){
+    if(mobileController.text.isEmpty || mobileController.text.length < 10){
+      TopSnackBar.show(context, message: "Please fill all the fields");
+      return;
+    }
+    if (!GetUtils.isNumericOnly(mobileController.text)) {
+      TopSnackBar.show(context, message:"Invalid Mobile Number Field");
+      return;
+    }
+    if(!isChecked.value){
+      TopSnackBar.show(context, message: "Please accept the terms and conditions");
+      return;
+    }
+    // login(context);
+    // handleSendOtp();
+    checkUser(context);
+  }
+
+  // void login(BuildContext context) async {
+  //   try{
+  //   isLoading.value = true;
+  //   loginModelData =  await restClient.loginApi({
+  //     "mobile": mobileController.text,
+  //   });
+  //   if(loginModelData.code == 200){
+  //     await SharedPreferencesHelper().saveToken(loginModelData.data!.accessToken!);
+  //     await SharedPreferencesHelper().saveUserId(loginModelData.data!.userId!);
+  //     await SharedPreferencesHelper().saveLoginStatus(true);
+  //     Get.to(()=> BaseScreen());
+  //     TopSnackBar.show(context, message: "Login Successfully",backgroundColor: ColorRes.colorPrimary,textColor: ColorRes.whitePure);
+  //     //Get.snackbar("Success", "Login Successfully");
+  //   }else{
+  //     TopSnackBar.show(context, message: "Something went wrong");
+  //   }
+  //
+  //   }catch(e){
+  //     debugPrint(e.toString());
+  //   }finally{
+  //     isLoading.value = false;
+  //   }
+  //
+  // }
+
+  void checkUser(BuildContext context) async {
+    try{
+      isLoading.value = true;
+      checkMobileModel =  await restClient.checkMobileApi({
+        "mobile": mobileController.text,
+      });
+      if(checkMobileModel.code == 200){
+
+        handleSendOtp(checkMobileModel.isAvailable);
+        // await SharedPreferencesHelper().saveToken(loginModelData.data!.accessToken!);
+        // await SharedPreferencesHelper().saveUserId(loginModelData.data!.userId!);
+        // await SharedPreferencesHelper().saveLoginStatus(true);
+        // Get.to(()=> BaseScreen());
+
+      }else{
+        TopSnackBar.show(context, message: "Something went wrong");
+      }
+
+    }catch(e){
+      debugPrint(e.toString());
+    }finally{
+      isLoading.value = false;
+    }
+
+  }
+
+  Future<void> handleSendOtp(bool? isAvailable) async {
+    final data = {'identifier': "91${mobileController.text}"};
+    try {
+      final response = await OTPWidget.sendOTP(data);
+      debugPrint(response.toString());
+      if (response != null && response['type'] == 'success') {
+        if (response.containsKey('access-token')) {
+          debugPrint(response.toString());
+        } else {
+          final reqId = response['message'];
+          debugPrint("=======>${mobileController.text}");
+          Get.to(()=>VerificationScreen(),arguments: {"verificationId": reqId , "phone":mobileController.text,"isAvailable":isAvailable});
+        }
+      } else {
+        print("Failed to send OTP: $response");
+      }
+    }catch(e){
+      debugPrint("Error HandleSendOtp: $e");
+    }
+  }
+
+  // Future<void> checkNumber({bool isForget = false}) async {
+  //   isLoading.value = true;
+  //   try {
+  //     //final globalResponse = await restClient.checkMobile({'mobile':phoneController.text.toString(),'ccode':selectedCode.value.toString()});
+  //     final response = await restClient.checkMobile({
+  //       'mobile': phoneController.text.toString(),
+  //       'ccode': selectedCode.value.toString()
+  //     });
+  //     if (response.result == "true") {
+  //       isLoading.value = false;
+  //       debugPrint("New Number");
+  //       if(isForget){
+  //         Get.snackbar("Number Not Registered", "Check the entered mobile number",backgroundColor: ColorRes.whitePure);
+  //       }
+  //       handleSendOtp();
+  //       // startPhoneAuth("+91${phoneController.text}",false);
+  //       //Get.to(() => OtpScreen(),arguments: [phoneController.text]);
+  //
+  //     } else {
+  //       debugPrint("Result False");
+  //       if (response.responseCode == "401") {
+  //         if(isForget){
+  //           debugPrint("isForgot true condition");
+  //           startPhoneAuth("+91${phoneController.text}",true);
+  //         }
+  //         showPasswordField.value = true;
+  //         debugPrint("Existing Number");
+  //       }
+  //     }
+  //     debugPrint(" Response :" + response.toString());
+  //   } catch (e) {
+  //     debugPrint("ERRORRR!: $e");
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
+
+
+}
