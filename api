@@ -1,0 +1,131 @@
+
+import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shuktu/services/api_services/rest_client.dart';
+import '../../utils/const_res.dart';
+import '../../utils/shared_pref_helper.dart';
+
+Dio dio = getDio();
+final restClient = RestClient(dio, baseUrl: "https://api.shutku.com/api/");
+
+Dio getDio(){
+  BaseOptions options = BaseOptions(
+    receiveDataWhenStatusError: true,
+    contentType: "application/json",
+    sendTimeout: const Duration(seconds: 30),
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+    responseType: ResponseType.json,
+  );
+
+  Dio dio = Dio(options);
+
+  dio.interceptors
+      .add(InterceptorsWrapper(
+      onRequest: (RequestOptions request, handler) async {
+        if (!request.headers.containsKey("Authorization")) {
+          final token = await SharedPreferencesHelper().getToken();
+          debugPrint("Retrieved Token: $token");
+          print("Retrieved Token: $token");
+          if (token != null && token.isNotEmpty) {
+            request.headers["Authorization"] = "Bearer $token";
+            debugPrint("if condition wala Bearer $token");
+            print("if condition wala Bearer Bearer $token");
+          } else {
+            // for debugging only
+            debugPrint("else condition wala Bearer $token");
+            print("else condition wala Bearer Bearer $token");
+            request.headers["Authorization"] = "Bearer 6199f76ee6e8449e1ff21bc8f85790048242edf0fb62d10c2aa83f39cac15015";
+          }
+        }
+
+        printValue(tag: 'API URL:' , "${request.uri}");
+        printValue(tag: 'HEADER:', request.headers);
+
+        if (request.data is FormData) {
+          debugPrint("PRINT OUTPUT: REQUEST BODY is FormData with fields:");
+          final formData = request.data as FormData;
+
+          for (var field in formData.fields) {
+            debugPrint("  FIELD -> ${field.key}: ${field.value}");
+          }
+
+          for (var file in formData.files) {
+            debugPrint("  FILE -> ${file.key}: ${file.value.filename}");
+          }
+        } else {
+          try {
+            printValue(tag: 'REQUEST BODY:', jsonEncode(request.data));
+          } catch (e) {
+            debugPrint("PRINT OUTPUT: REQUEST BODY could not be encoded: $e");
+          }
+        }
+
+        return handler.next(request);
+      },
+      onResponse: (Response response, ResponseInterceptorHandler handler) {
+        dynamic processedData = response.data;
+
+        if (response.data is String) {
+          try {
+            processedData = jsonDecode(response.data);
+          } catch (e) {
+            debugPrint("Failed to decode JSON string: $e");
+          }
+        }
+
+        printValue(tag: 'API RESPONSE:', processedData);
+        return handler.next(Response(
+          requestOptions: response.requestOptions,
+          data: processedData,
+          statusCode: response.statusCode,
+          statusMessage: response.statusMessage,
+          headers: response.headers,
+          isRedirect: response.isRedirect,
+          redirects: response.redirects,
+          extra: response.extra,
+        ));
+      },
+
+      onError: (DioException e, ErrorInterceptorHandler  handler) {
+        printValue(tag: 'STATUS CODE:', "${e.response?.statusCode ?? ""}");
+        printValue(tag: 'ERROR DATA:', e.response?.data ?? "");
+
+        final statusCode = e.response?.statusCode;
+        final errorMessage = e.response?.data?['message'] ?? 'Unexpected error occurred.';
+
+        final customError = ApiException(errorMessage, code: statusCode);
+
+        return handler.reject(e.copyWith(error: customError));
+      }));
+  return dio;
+}
+
+void printValue(dynamic value, {String tag = ""}) {
+  try {
+    if (value is String) {
+      value = jsonDecode(value);
+    }
+
+    if (value is Map || value is List) {
+      debugPrint(
+          "JSON OUTPUT: $tag ${const JsonEncoder.withIndent('  ').convert(value)}\n");
+    } else {
+      debugPrint("PRINT OUTPUT: $tag $value\n\n");
+    }
+  } catch (_) {
+    debugPrint("PRINT OUTPUT: $tag $value\n\n");
+  }
+}
+
+class ApiException implements Exception {
+  final String message;
+  final int? code;
+
+  ApiException(this.message, {this.code});
+
+  @override
+  String toString() => message;
+}
