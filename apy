@@ -1,0 +1,162 @@
+import 'package:dio/dio.dart';
+import 'package:retrofit/retrofit.dart';
+import 'package:shuktu/models/SaveAddressResponse.dart' as save_order;
+import 'package:shuktu/models/all_category_model.dart';
+import 'package:shuktu/models/all_orders_model.dart';
+import 'package:shuktu/models/categories_data_model.dart' hide Data;
+import 'package:shuktu/models/check_mobile_model.dart';
+import 'package:shuktu/models/coupons_model.dart';
+import 'package:shuktu/models/home_screen_data_model.dart' as home;
+import 'package:shuktu/models/login_model.dart' hide Data;
+import 'package:shuktu/models/notification_model.dart' hide Data;
+import 'package:shuktu/models/order_details_model.dart';
+import 'package:shuktu/models/product_stocks_availability_model.dart' hide Data;
+import 'package:shuktu/models/profile_model.dart' hide Data;
+import 'package:shuktu/models/save_order_response.dart' hide Data;
+import 'package:shuktu/models/sub_categories_model.dart';
+
+import '../../models/FetchSettingsModel.dart';
+import '../../models/SaveAddressResponse.dart' hide Data;
+import '../../models/all_address_model.dart' hide Data;
+import '../../models/global_model.dart';
+import '../../models/home_screen_data_model.dart';
+import '../../models/product_details_model.dart' ;
+import '../../models/searched_data_model.dart';
+import '../../models/state_model.dart' hide Data;
+import '../../models/wishlist_model.dart' as wish;
+import '../../models/wishlist_model.dart' hide Data;
+
+part 'rest_client.g.dart';
+
+@RestApi()
+abstract class RestClient {
+
+  factory RestClient(Dio dio,{String? baseUrl}) = _RestClient;
+
+  @POST('register')
+  Future<GlobalModel> registerApi(@Body() Map<String, dynamic> body);
+
+  @POST('sign-up')
+  Future<LoginModel> signUp(@Body() Map<String, dynamic> body);
+
+  @POST('verify-otp')
+  Future<GlobalModel> verifyOtpApi(@Body() Map<String, dynamic> body);
+
+  @POST('send-otp')
+  Future<GlobalModel> sendOtpApi(@Body() Map<String, dynamic> body);
+
+  @POST('check-user')
+  Future<CheckMobileModel> checkMobileApi(@Body() Map<String, dynamic> body);
+
+  @POST('login')
+  Future<LoginModel> loginApi(@Body() Map<String, dynamic> body);
+
+  @POST('get-token')
+  Future<LoginModel> getTokenAPI(@Body() Map<String, dynamic> body);
+
+  @POST('change-password')
+  Future<GlobalModel> changePasswordApi(@Body() Map<String, dynamic> body);
+
+  @GET('homepage')
+  Future<home.HomeScreenModel> getHomeScreenData();
+
+  @GET('get-category')
+  Future<CategoriesModel> getCategories();
+
+  @GET('get-products')
+  Future<home.Data> getProductsByCategory(@Query("category_id") int? category,@Query("per_page") int? limit,@Query("page") int? page);
+
+  @GET('states')
+  Future<StateModel> stateApi();
+
+  @POST('save-address')
+  Future<save_order.SaveAddressResponse> saveAddressApi(@Body() Map<String, dynamic> body);
+
+  @POST('edit-address')
+  Future<save_order.SaveAddressResponse> editAddressApi(@Body() Map<String, dynamic> body);
+
+  @GET('get-addresses')
+  Future<AllAddressModel> getAddress(@Query("customer_id") int userId,);
+
+  @GET('user-profile')
+  Future<ProfileModel> getProfileApi();
+
+  @GET('search-products')
+  Future<SearchedDataModel> searchProducts(@Query("name") String name);
+
+  @POST('wishlist')
+  Future<GlobalModel> isWishlist(@Body() Map<String, dynamic> body);
+
+  @GET('product-detail')
+  Future<ProductDetailsDataModel> getProductDetail(@Query("product_id") String productId);
+
+  @GET('product-detail/{id}')
+  Future<ProductDetailsDataModel> getProductDetails(
+      @Path('id') String productId,
+      );
+
+  @GET('get-wishlist')
+  Future<wish.WishlistModel> getWishlistProducts();
+
+
+  @POST('send_device_id_v2')
+  Future<GlobalModel> sendTokenApi(@Body() Map<String, dynamic> body);
+
+  @POST('update-profile')
+  @MultiPart()
+  Future<GlobalModel> updateProfileApi(@Body() FormData formData);
+
+  @POST('delete-account')
+  Future<GlobalModel> deleteAccountApi();
+
+  @POST('save-order')
+  Future<SaveOrderResponse> saveOrderApi(@Body() Map<String, dynamic> body);
+
+  // @POST('get-deliveryDetail')
+  // Future<DeliveryDetailsModel> deliveryDetailsApi(@Body() Map<String, dynamic> body);
+
+  @GET('fetch_settings')
+  Future<FetchSettingsModel> fetchSettings();
+
+  @GET('getAllCategory')
+  Future<AllCategoryModel> getAllCategories(@Query("per_page") int? limit,@Query("page") int? page);
+  
+  @GET('getSubcategory/{id}')
+  Future<SubCategoriesModel> getSubCategories(@Path('id') String subCategoryId,);
+
+  @GET('get-parentProducts')
+  Future<home.Data> getParentProducts(@Query("category_id") int? category,@Query("per_page") int? limit);
+
+  @GET('orders')
+  Future<AllOrdersModel> getAllOrders();
+
+  @GET('order-detail/{id}')
+  Future<OrderDetailModel> getOrderDetail(@Path('id') String orderId);
+  
+  @POST('coupon-list')
+  Future<CouponsListModel> getCouponList(@Body() Map<String, dynamic> body);
+
+  @POST("https://api.razorpay.com/v1/orders")
+  Future<dynamic> createRazorpayOrder(
+    @Header("Authorization") String auth,
+    @Body() Map<String,dynamic> body,
+  );
+  
+  @POST('payment-status')
+  Future<GlobalModel> updatePaymentStatus(@Body() Map<String, dynamic> body);
+
+  @POST('update-address')
+  Future<GlobalModel> updateAddressApi(@Body() Map<String, dynamic> body);
+
+
+  @POST('check-products-availability')
+  Future<ProductStockAvailabilityResponse> checkProductsAvailability(@Body() Map<String, dynamic> body);
+
+  @GET('get-notification')
+  Future<NotificationModel> getNotification();
+
+
+
+  // @GET('get-brands')
+  // Future<BrandsDataModel> getBrands();
+}
