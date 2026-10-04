@@ -1,0 +1,9 @@
+# Add to your pubspec.yaml
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  get: ^4.6.6          # state management only (GetxController, Obx, Get.put/find)
+  go_router: ^14.8.1   # routing; a newer version should also work
